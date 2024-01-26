@@ -21,15 +21,15 @@ resources:
 
 setup: |
   set -e  # Exit if any command failed.
-  git clone https://github.com/huggingface/transformers/ || true
-  cd transformers
+  git https://github.com/aibanez29/llm-experiment || true
+  cd llm-experiment
   pip install -r requirements.txt
 
 run: |
   set -e  # Exit if any command failed.
   python run_domain_adaptation.py \
-    --model_name_or_path bert-base-cased \
-    --dataset_path tu_archivo.csv \
+    --model_name_or_path gpt2 \
+    --dataset_path historia.csv \
     --output_dir /tmp/imdb/ \
     --num_train_epochs 3 \
     --per_device_train_batch_size 32 \

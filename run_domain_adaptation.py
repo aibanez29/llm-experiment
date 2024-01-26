@@ -1,46 +1,59 @@
-# Importar las bibliotecas necesarias
 import torch
 from transformers import GPT2Config, GPT2LMHeadModel, GPT2Tokenizer, GPT2ForSequenceClassification
 from transformers import TrainingArguments, Trainer
-
-# ...
-
-# Definir los argumentos de entrenamiento y modelo
-training_args = TrainingArguments(
-    output_dir="./llm_output",
-    overwrite_output_dir=True,
-    num_train_epochs=3,
-    per_device_train_batch_size=2,  # Reducir el tamaño del lote si la V100 se queda sin memoria
-    save_steps=10_000,
-    save_total_limit=2,
-    learning_rate=5e-5,
-    fp16=True,
-    fp16_opt_level="O2",
-)
-
-model_name_or_path = "gpt2"  # Puedes ajustar según tus necesidades
-tokenizer = GPT2Tokenizer.from_pretrained(model_name_or_path)
-model = GPT2LMHeadModel.from_pretrained(moadel_name_or_path)
-
-# Crear un modelo de clasificación sobre GPT-2
-model = GPT2ForSequenceClassification.from_pretrained(model_name_or_path)
-
-# Cargar tus datos desde un archivo CSV
-# Asumiendo que tienes una columna llamada 'texto' en tu archivo CSV
+import argparse
 import pandas as pd
 
-train_data = pd.read_csv("tu_archivo.csv")
-train_data = list(train_data["texto"])
+def main():
+    parser = argparse.ArgumentParser(description="Domain Adaptation with GPT-2 for Sequence Classification")
+    parser.add_argument("--model_name_or_path", type=str, default="gpt2", help="Model name or path")
+    parser.add_argument("--dataset_path", type=str, required=True, help="Path to CSV file with 'texto' column")
+    parser.add_argument("--output_dir", type=str, default="./llm_output", help="Output directory")
+    parser.add_argument("--num_train_epochs", type=int, default=3, help="Number of training epochs")
+    parser.add_argument("--per_device_train_batch_size", type=int, default=2, help="Batch size per device")
+    parser.add_argument("--save_steps", type=int, default=10_000, help="Save steps")
+    parser.add_argument("--save_total_limit", type=int, default=2, help="Save total limit")
+    parser.add_argument("--learning_rate", type=float, default=5e-5, help="Learning rate")
+    parser.add_argument("--fp16", action="store_true", help="Use FP16")
 
-# Tokenizar tus datos
-train_data = tokenizer(train_data, return_tensors="pt", truncation=True, padding=True)
+    args = parser.parse_args()
 
-# Configurar el objeto Trainer
-trainer = Trainer(
-    model=model,
-    args=training_args,
-    train_dataset=train_data,
-)
+    # Definir los argumentos de entrenamiento y modelo
+    training_args = TrainingArguments(
+        output_dir=args.output_dir,
+        overwrite_output_dir=True,
+        num_train_epochs=args.num_train_epochs,
+        per_device_train_batch_size=args.per_device_train_batch_size,
+        save_steps=args.save_steps,
+        save_total_limit=args.save_total_limit,
+        learning_rate=args.learning_rate,
+        fp16=args.fp16,
+        fp16_opt_level="O2",
+    )
 
-# Iniciar el entrenamiento
-trainer.train()
+    model_name_or_path = args.model_name_or_path
+    tokenizer = GPT2Tokenizer.from_pretrained(model_name_or_path)
+    model = GPT2LMHeadModel.from_pretrained(model_name_or_path)
+
+    # Crear un modelo de clasificación sobre GPT-2
+    model = GPT2ForSequenceClassification.from_pretrained(model_name_or_path)
+
+    # Cargar tus datos desde un archivo CSV
+    train_data = pd.read_csv(args.dataset_path)
+    train_data = list(train_data["texto"])
+
+    # Tokenizar tus datos
+    train_data = tokenizer(train_data, return_tensors="pt", truncation=True, padding=True)
+
+    # Configurar el objeto Trainer
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=train_data,
+    )
+
+    # Iniciar el entrenamiento
+    trainer.train()
+
+if __name__ == "__main__":
+    main()
