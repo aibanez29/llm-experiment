@@ -1,0 +1,39 @@
+# dnn.yaml
+
+name: gpt
+
+resources:
+  cloud: gcp
+  accelerators: [A100:1, V100:1]
+
+# Optional: upload a working directory to remote ~/sky_workdir.
+# Commands in "setup" and "run" will be executed under it.
+#
+# workdir: .
+
+# Optional: upload local files.
+# Format:
+#   /remote/path: /local/path
+#
+# file_mounts:
+#   ~/.vimrc: ~/.vimrc
+#   ~/.netrc: ~/.netrc
+
+setup: |
+  set -e  # Exit if any command failed.
+  git clone https://github.com/huggingface/transformers/ || true
+  cd transformers
+  pip install -r requirements.txt
+
+run: |
+  set -e  # Exit if any command failed.
+  python run_domain_adaptation.py \
+    --model_name_or_path bert-base-cased \
+    --dataset_path tu_archivo.csv \
+    --output_dir /tmp/imdb/ \
+    --num_train_epochs 3 \
+    --per_device_train_batch_size 32 \
+    --save_steps 10000 \
+    --save_total_limit 2 \
+    --learning_rate 2e-5 \
+    --fp16
