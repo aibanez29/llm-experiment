@@ -21,7 +21,7 @@ resources:
 
 setup: |
   set -e  # Exit if any command failed.
-  git https://github.com/aibanez29/llm-experiment || true
+  git clone https://github.com/aibanez29/llm-experiment || true
   cd llm-experiment
   pip install -r requirements.txt
 
