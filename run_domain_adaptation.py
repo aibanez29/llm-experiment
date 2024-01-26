@@ -33,23 +33,20 @@ def main():
 
     model_name_or_path = args.model_name_or_path
     tokenizer = GPT2Tokenizer.from_pretrained(model_name_or_path)
-    model = GPT2LMHeadModel.from_pretrained(model_name_or_path)
-
-    # Crear un modelo de clasificación sobre GPT-2
     model = GPT2ForSequenceClassification.from_pretrained(model_name_or_path)
 
     # Cargar tus datos desde un archivo CSV
     train_data = pd.read_csv(args.dataset_path)
-    train_data = list(train_data["texto"])
+    texts = list(train_data["texto"])
 
     # Tokenizar tus datos
-    train_data = tokenizer(train_data, return_tensors="pt", truncation=True, padding=True)
+    tokenized_data = tokenizer(texts, return_tensors="pt", truncation=True, padding=True)
 
     # Configurar el objeto Trainer
     trainer = Trainer(
         model=model,
         args=training_args,
-        train_dataset=train_data,
+        train_dataset=tokenized_data,
     )
 
     # Iniciar el entrenamiento
