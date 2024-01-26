@@ -27,6 +27,7 @@ setup: |
 
 run: |
   set -e  # Exit if any command failed.
+  cd llm-experiment
   python run_domain_adaptation.py \
     --model_name_or_path gpt2 \
     --dataset_path historia.csv \
