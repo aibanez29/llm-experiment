@@ -1,4 +1,5 @@
 import torch
+import transformers
 from transformers import GPT2Config, GPT2LMHeadModel, GPT2Tokenizer, GPT2ForSequenceClassification
 from transformers import TrainingArguments, Trainer
 import argparse
