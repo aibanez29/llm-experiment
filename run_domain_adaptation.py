@@ -1,5 +1,5 @@
 import torch
-from transformers import GPT2Tokenizer, GPT2ForSequenceClassification, TrainingArguments, Trainer
+from transformers import AutoTokenizer, AutoModelForCausalLM, TrainingArguments, Trainer
 import argparse
 import pandas as pd
 
@@ -31,16 +31,12 @@ def main():
     )
 
     model_name_or_path = args.model_name_or_path
-    tokenizer = GPT2Tokenizer.from_pretrained(model_name_or_path)
-    
-    # Add a new pad token using add_special_tokens
-    tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+    tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
+    model = AutoModelForCausalLM.from_pretrained(model_name_or_path)
     
     # Set the padding token
-    tokenizer.pad_token = '[PAD]'
+    tokenizer.pad_token_id = tokenizer.eos_token_id
     
-    model = GPT2ForSequenceClassification.from_pretrained(model_name_or_path)
-
     # Cargar tus datos desde un archivo CSV
     train_data = pd.read_csv(args.dataset_path)
     texts = list(train_data["texto"])
