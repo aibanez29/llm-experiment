@@ -2,6 +2,7 @@ import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM, TrainingArguments, Trainer
 import argparse
 import pandas as pd
+import wandb  # Import the wandb module
 
 def main():
     parser = argparse.ArgumentParser(description="Domain Adaptation with GPT-2 for Sequence Classification")
@@ -16,6 +17,9 @@ def main():
     parser.add_argument("--fp16", action="store_true", help="Use FP16")
 
     args = parser.parse_args()
+
+    # Set up W&B with your API key
+    wandb.login(key="81617b7b6e984f94692853b7984ed06894a93d79")  # Replace with your actual API key
 
     # Definir los argumentos de entrenamiento y modelo
     training_args = TrainingArguments(
