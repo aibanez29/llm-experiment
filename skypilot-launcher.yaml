@@ -23,7 +23,7 @@ setup: |
   set -e  # Exit if any command failed.
   git clone https://github.com/aibanez29/llm-experiment || true
   cd llm-experiment
-  pip install -r requirements.txt
+  pip install -r requirements.txt torch==1.12.1+cu113 --extra-index-url https://download.pytorch.org/whl/cu113  
 
 run: |
   set -e  # Exit if any command failed.
