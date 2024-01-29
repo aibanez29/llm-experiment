@@ -20,13 +20,17 @@ resources:
 #   ~/.netrc: ~/.netrc
 
 setup: |
+  conda create -n vllm python=3.9 -y
+  conda activate vllm
   set -e  # Exit if any command failed.
   git clone https://github.com/aibanez29/llm-experiment || true
   cd llm-experiment
-  pip install -r requirements.txt torch==1.12.1+cu113 --extra-index-url https://download.pytorch.org/whl/cu113  
+  pip install -r requirements.txt 
+#torch==1.12.1+cu113 --extra-index-url https://download.pytorch.org/whl/cu113  
 
 run: |
   set -e  # Exit if any command failed.
+  conda activate vllm
   cd llm-experiment
   python run_domain_adaptation.py \
     --model_name_or_path gpt2 \
