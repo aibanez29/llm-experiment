@@ -32,10 +32,13 @@ def main():
 
     model_name_or_path = args.model_name_or_path
     tokenizer = GPT2Tokenizer.from_pretrained(model_name_or_path)
-
+    
     # Add a new pad token
     tokenizer.add_special_tokens({'pad_token': '[PAD]'})
-
+    
+    # Set the padding token
+    tokenizer.pad_token = tokenizer.eos_token
+    
     model = GPT2ForSequenceClassification.from_pretrained(model_name_or_path)
 
     # Cargar tus datos desde un archivo CSV
