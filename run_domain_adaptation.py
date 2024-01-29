@@ -1,8 +1,5 @@
 import torch
-import torchvision
-import transformers
-from transformers import GPT2Config, GPT2LMHeadModel, GPT2Tokenizer, GPT2ForSequenceClassification
-from transformers import TrainingArguments, Trainer
+from transformers import GPT2Tokenizer, GPT2ForSequenceClassification, TrainingArguments, Trainer
 import argparse
 import pandas as pd
 
@@ -35,6 +32,10 @@ def main():
 
     model_name_or_path = args.model_name_or_path
     tokenizer = GPT2Tokenizer.from_pretrained(model_name_or_path)
+
+    # Add a new pad token
+    tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+
     model = GPT2ForSequenceClassification.from_pretrained(model_name_or_path)
 
     # Cargar tus datos desde un archivo CSV
