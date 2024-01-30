@@ -6,7 +6,7 @@ import pandas as pd
 def fine_tune_gpt2(train_file, output_dir, num_train_epochs=3, per_device_train_batch_size=2, save_steps=10_000):
     # Cargar tus datos desde un archivo CSV
     train_data = pd.read_csv(train_file)
-    texts = list(train_data["input_text"])
+    texts = list(train_data["texto"])
 
     # Tokenizar tus datos
     tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
