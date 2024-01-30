@@ -2,6 +2,7 @@ import torch
 from transformers import GPT2Config, GPT2LMHeadModel, GPT2Tokenizer, TextDataset, DataCollatorForLanguageModeling
 from transformers import Trainer, TrainingArguments
 from tokenizers import Tokenizer, models, trainers, processors
+import pandas as pd
 
 def create_custom_tokenizer(train_file):
     # Cargar tus datos desde un archivo CSV
@@ -32,7 +33,7 @@ def create_custom_tokenizer(train_file):
 
 def fine_tune_gpt2(train_file, output_dir, num_train_epochs=3, per_device_train_batch_size=2, save_steps=10_000):
     # Cargar tus datos desde un archivo CSV
-    train_data = torch.load(train_file)
+    train_data = pd.read_csv(train_file)
     texts = list(train_data["texto"])
 
     # Crear y guardar el tokenizer personalizado
@@ -40,8 +41,7 @@ def fine_tune_gpt2(train_file, output_dir, num_train_epochs=3, per_device_train_
     tokenizer.save("custom_tokenizer.json")
 
     # Tokenizar tus datos
-    encoded_data = tokenizer.encode_batch(texts)
-    tokenized_data = [torch.tensor(encoded.ids) for encoded in encoded_data]
+    tokenized_data = tokenizer(texts, return_tensors="pt", truncation=True, padding=True)
 
     # Configurar el modelo GPT-2
     model = GPT2LMHeadModel.from_pretrained("gpt2", config=GPT2Config.from_pretrained("gpt2"))
@@ -64,11 +64,12 @@ def fine_tune_gpt2(train_file, output_dir, num_train_epochs=3, per_device_train_
         model=model,
         args=training_args,
         data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False),
-        train_dataset=TextDataset(tokenized_data),
+        train_dataset=TextDataset(tokenized_data, tokenizer=tokenizer, block_size=128),
     )
 
     # Iniciar el fine-tuning
     trainer.train()
 
 if __name__ == "__main__":
+    create_custom_tokenizer("historia.csv")  # Configurar el tokenizador personalizado
     fine_tune_gpt2(train_file="historia.csv", output_dir="./finetuned_gpt2_model")
