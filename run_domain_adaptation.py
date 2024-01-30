@@ -1,62 +1,43 @@
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM, TrainingArguments, Trainer
-import argparse
+from transformers import GPT2Tokenizer, GPT2LMHeadModel, GPT2Config, TextDataset, DataCollatorForLanguageModeling
+from transformers import Trainer, TrainingArguments
 import pandas as pd
-import wandb  # Import the wandb module
 
-def main():
-    parser = argparse.ArgumentParser(description="Domain Adaptation with GPT-2 for Sequence Classification")
-    parser.add_argument("--model_name_or_path", type=str, default="gpt2", help="Model name or path")
-    parser.add_argument("--dataset_path", type=str, required=True, help="Path to CSV file with 'texto' column")
-    parser.add_argument("--output_dir", type=str, default="./llm_output", help="Output directory")
-    parser.add_argument("--num_train_epochs", type=int, default=3, help="Number of training epochs")
-    parser.add_argument("--per_device_train_batch_size", type=int, default=2, help="Batch size per device")
-    parser.add_argument("--save_steps", type=int, default=10_000, help="Save steps")
-    parser.add_argument("--save_total_limit", type=int, default=2, help="Save total limit")
-    parser.add_argument("--learning_rate", type=float, default=5e-5, help="Learning rate")
-    parser.add_argument("--fp16", action="store_true", help="Use FP16")
-
-    args = parser.parse_args()
-
-    # Set up W&B with your API key
-    wandb.login(key="81617b7b6e984f94692853b7984ed06894a93d79")  # Replace with your actual API key
-
-    # Definir los argumentos de entrenamiento y modelo
-    training_args = TrainingArguments(
-        output_dir=args.output_dir,
-        overwrite_output_dir=True,
-        num_train_epochs=args.num_train_epochs,
-        per_device_train_batch_size=args.per_device_train_batch_size,
-        save_steps=args.save_steps,
-        save_total_limit=args.save_total_limit,
-        learning_rate=args.learning_rate,
-        fp16=args.fp16,
-        fp16_opt_level="O2",
-    )
-
-    model_name_or_path = args.model_name_or_path
-    tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
-    model = AutoModelForCausalLM.from_pretrained(model_name_or_path)
-    
-    # Set the padding token
-    tokenizer.pad_token_id = tokenizer.eos_token_id
-    
+def fine_tune_gpt2(train_file, output_dir, num_train_epochs=3, per_device_train_batch_size=2, save_steps=10_000):
     # Cargar tus datos desde un archivo CSV
-    train_data = pd.read_csv(args.dataset_path)
-    texts = list(train_data["texto"])
+    train_data = pd.read_csv(train_file)
+    texts = list(train_data["input_text"])
 
     # Tokenizar tus datos
+    tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
     tokenized_data = tokenizer(texts, return_tensors="pt", truncation=True, padding=True)
+
+    # Configurar el modelo GPT-2
+    model = GPT2LMHeadModel.from_pretrained("gpt2", config=GPT2Config.from_pretrained("gpt2"))
+
+    # Configurar los argumentos de entrenamiento
+    training_args = TrainingArguments(
+        output_dir=output_dir,
+        overwrite_output_dir=True,
+        num_train_epochs=num_train_epochs,
+        per_device_train_batch_size=per_device_train_batch_size,
+        save_steps=save_steps,
+        learning_rate=2e-5,  # Ajustar según sea necesario
+        fp16=True,  # Habilitar FP16
+        max_steps=50,  # Ajustar según sea necesario
+        max_seq_length=128,  # Ajustar según sea necesario
+    )
 
     # Configurar el objeto Trainer
     trainer = Trainer(
         model=model,
         args=training_args,
-        train_dataset=tokenized_data,
+        data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False),
+        train_dataset=TextDataset(tokenized_data, tokenizer=tokenizer, block_size=128),
     )
 
-    # Iniciar el entrenamiento
+    # Iniciar el fine-tuning
     trainer.train()
 
 if __name__ == "__main__":
-    main()
+    fine_tune_gpt2(train_file="historia.csv", output_dir="./finetuned_gpt2_model")
