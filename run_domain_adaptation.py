@@ -11,7 +11,7 @@ def create_custom_tokenizer(train_file):
 
     # Crear un tokenizer personalizado
     tokenizer = Tokenizer(models.BPE())
-    trainer = trainers.BpeTrainer(special_tokens=["[PAD]", "[CLS]", "[SEP]", "[MASK]", "[EOS]"])
+    trainer = trainers.BpeTrainer(special_tokens=["[CLS]", "[SEP]", "[MASK]", "[EOS]"])
     tokenizer.train_from_iterator(texts, trainer)
     tokenizer.post_processor = processors.TemplateProcessing(
         single="[CLS] $A [SEP] [MASK] [EOS]",
@@ -24,6 +24,9 @@ def create_custom_tokenizer(train_file):
         ],
     )
     tokenizer.enable_truncation(max_length=128)
+
+    # Agregar token de relleno
+    tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 
     return tokenizer
 
