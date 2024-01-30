@@ -1,16 +1,44 @@
 import torch
-from transformers import GPT2Tokenizer, GPT2LMHeadModel, GPT2Config, TextDataset, DataCollatorForLanguageModeling
+from transformers import GPT2Config, GPT2LMHeadModel, GPT2Tokenizer, TextDataset, DataCollatorForLanguageModeling
 from transformers import Trainer, TrainingArguments
-import pandas as pd
+from tokenizers import Tokenizer, models, trainers, processors
+
+def create_custom_tokenizer(train_file):
+    # Cargar tus datos desde un archivo CSV
+    with open(train_file, 'r', encoding='utf-8') as file:
+        lines = file.readlines()
+    texts = [line.split(',')[0].strip() for line in lines[1:]]  # Ignorar la primera línea con encabezados
+
+    # Crear un tokenizer personalizado
+    tokenizer = Tokenizer(models.BPE())
+    trainer = trainers.BpeTrainer(special_tokens=["[PAD]", "[CLS]", "[SEP]", "[MASK]", "[EOS]"])
+    tokenizer.train_from_iterator(texts, trainer)
+    tokenizer.post_processor = processors.TemplateProcessing(
+        single="[CLS] $A [SEP] [MASK] [EOS]",
+        pair="[CLS] $A [SEP] $B:1 [MASK] [EOS]:1",
+        special_tokens=[
+            ("[CLS]", tokenizer.token_to_id("[CLS]")),
+            ("[SEP]", tokenizer.token_to_id("[SEP]")),
+            ("[MASK]", tokenizer.token_to_id("[MASK]")),
+            ("[EOS]", tokenizer.token_to_id("[EOS]")),
+        ],
+    )
+    tokenizer.enable_truncation(max_length=128)
+
+    return tokenizer
 
 def fine_tune_gpt2(train_file, output_dir, num_train_epochs=3, per_device_train_batch_size=2, save_steps=10_000):
     # Cargar tus datos desde un archivo CSV
-    train_data = pd.read_csv(train_file)
+    train_data = torch.load(train_file)
     texts = list(train_data["texto"])
 
+    # Crear y guardar el tokenizer personalizado
+    tokenizer = create_custom_tokenizer(train_file)
+    tokenizer.save("custom_tokenizer.json")
+
     # Tokenizar tus datos
-    tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
-    tokenized_data = tokenizer(texts, return_tensors="pt", truncation=True, padding=True)
+    encoded_data = tokenizer.encode_batch(texts)
+    tokenized_data = [torch.tensor(encoded.ids) for encoded in encoded_data]
 
     # Configurar el modelo GPT-2
     model = GPT2LMHeadModel.from_pretrained("gpt2", config=GPT2Config.from_pretrained("gpt2"))
@@ -33,7 +61,7 @@ def fine_tune_gpt2(train_file, output_dir, num_train_epochs=3, per_device_train_
         model=model,
         args=training_args,
         data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False),
-        train_dataset=TextDataset(tokenized_data, tokenizer=tokenizer, block_size=128),
+        train_dataset=TextDataset(tokenized_data),
     )
 
     # Iniciar el fine-tuning
