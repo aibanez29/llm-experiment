@@ -1,7 +1,5 @@
-import torch
-from transformers import GPT2Tokenizer, GPT2LMHeadModel, GPT2Config, TextDataset, DataCollatorForLanguageModeling
-from transformers import Trainer, TrainingArguments
 import pandas as pd
+from transformers import GPT2Tokenizer
 
 def create_custom_tokenizer(train_file):
     # Load data from CSV
@@ -12,23 +10,17 @@ def create_custom_tokenizer(train_file):
     tokenizer = GPT2Tokenizer.from_pretrained('gpt2', model_max_length=1024)
     tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 
-    return tokenizer, texts
+    # Tokenize the data
+    tokenized_data = tokenizer(texts, return_tensors="pt", truncation=True, padding=True)
+
+    return tokenizer, tokenized_data
 
 def fine_tune_gpt2(train_file, output_dir, num_train_epochs=3, per_device_train_batch_size=2, save_steps=10_000):
     # Create custom tokenizer
-    tokenizer, texts = create_custom_tokenizer(train_file)
-
-    # Tokenize the data
-    tokenized_data = []
-    for text in texts:
-        tokens = tokenizer(text, return_tensors="pt", truncation=True, padding=True)
-        tokenized_data.append(tokens)
-
-    # Flatten the list of tokenized data
-    flat_tokenized_data = {key: torch.cat([item[key] for item in tokenized_data]) for key in tokenized_data[0].keys()}
+    tokenizer, tokenized_data = create_custom_tokenizer(train_file)
 
     # Configure the GPT-2 model
-    model = GPT2LMHeadModel.from_pretrained("gpt2", config=GPT2Config.from_pretrained("gpt2"))
+    model = GPT2LMHeadModel.from_pretrained("gpt2")
     model.resize_token_embeddings(len(tokenizer))
 
     # Configure training arguments
@@ -49,7 +41,7 @@ def fine_tune_gpt2(train_file, output_dir, num_train_epochs=3, per_device_train_
         model=model,
         args=training_args,
         data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False),
-        train_dataset=TextDataset(flat_tokenized_data, tokenizer=tokenizer, block_size=128),
+        train_dataset=TextDataset(tokenized_data, tokenizer=tokenizer, block_size=128),
     )
 
     # Start fine-tuning
