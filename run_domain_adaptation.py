@@ -6,7 +6,9 @@ from transformers import Trainer, TrainingArguments
 def create_custom_tokenizer(train_file):
     # Load data from CSV
     train_data = pd.read_csv(train_file)
-    texts = list(train_data["texto"])
+    
+    # Convert the text column to a list of strings
+    texts = train_data["texto"].tolist()
 
     # Create a new GPT-2 tokenizer
     tokenizer = GPT2Tokenizer.from_pretrained('gpt2', model_max_length=1024)
