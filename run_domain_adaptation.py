@@ -1,5 +1,5 @@
 import pandas as pd
-from transformers import GPT2LMHeadModel, GPT2Tokenizer, GPT2Config, TextDataset, DataCollatorForLanguageModeling
+from transformers import GPT2LMHeadModel, GPT2Tokenizer, TextDataset, DataCollatorForLanguageModeling
 from transformers import Trainer, TrainingArguments
 
 def create_custom_tokenizer(train_file):
@@ -12,7 +12,7 @@ def create_custom_tokenizer(train_file):
     tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 
     # Tokenize the data
-    tokenized_data = [tokenizer(text, return_tensors="pt", truncation=True, padding=True) for text in texts]
+    tokenized_data = tokenizer(texts, return_tensors="pt", truncation=True, padding=True, max_length=128)
 
     return tokenizer, tokenized_data
 
