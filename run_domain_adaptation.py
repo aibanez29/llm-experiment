@@ -24,6 +24,9 @@ def fine_tune_gpt2(train_file, output_dir, num_train_epochs=3, per_device_train_
         tokens = tokenizer(text, return_tensors="pt", truncation=True, padding=True)
         tokenized_data.append(tokens)
 
+    # Flatten the list of tokenized data
+    flat_tokenized_data = {key: torch.cat([item[key] for item in tokenized_data]) for key in tokenized_data[0].keys()}
+
     # Configure the GPT-2 model
     model = GPT2LMHeadModel.from_pretrained("gpt2", config=GPT2Config.from_pretrained("gpt2"))
     model.resize_token_embeddings(len(tokenizer))
@@ -46,7 +49,7 @@ def fine_tune_gpt2(train_file, output_dir, num_train_epochs=3, per_device_train_
         model=model,
         args=training_args,
         data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False),
-        train_dataset=TextDataset(tokenized_data, tokenizer=tokenizer, block_size=128),
+        train_dataset=TextDataset(flat_tokenized_data, tokenizer=tokenizer, block_size=128),
     )
 
     # Start fine-tuning
