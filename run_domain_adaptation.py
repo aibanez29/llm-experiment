@@ -1,3 +1,4 @@
+import torch
 import pandas as pd
 from transformers import GPT2LMHeadModel, GPT2Tokenizer, TextDataset, DataCollatorForLanguageModeling
 from transformers import Trainer, TrainingArguments
@@ -12,7 +13,7 @@ def create_custom_tokenizer(train_file):
     tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 
     # Tokenize the data
-    tokenized_data = tokenizer(texts, return_tensors="pt", truncation=True, padding=True, max_length=128)
+    tokenized_data = tokenizer(texts, return_tensors="pt", truncation=True, padding=True)
 
     return tokenizer, tokenized_data
 
@@ -23,6 +24,11 @@ def fine_tune_gpt2(train_file, output_dir, num_train_epochs=3, per_device_train_
     # Configure the GPT-2 model
     model = GPT2LMHeadModel.from_pretrained("gpt2")
     model.resize_token_embeddings(len(tokenizer))
+
+    # Flatten the tokenized data to match Trainer's expectations
+    flat_tokenized_data = {
+        key: value.view(-1) if isinstance(value, torch.Tensor) else value for key, value in tokenized_data.items()
+    }
 
     # Configure training arguments
     training_args = TrainingArguments(
@@ -42,7 +48,7 @@ def fine_tune_gpt2(train_file, output_dir, num_train_epochs=3, per_device_train_
         model=model,
         args=training_args,
         data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False),
-        train_dataset=TextDataset(tokenized_data, tokenizer=tokenizer, block_size=128),
+        train_dataset=TextDataset(flat_tokenized_data),  # Use the flattened tokenized data
     )
 
     # Start fine-tuning
